@@ -22,16 +22,19 @@ protected:
     PolyDriver drvArm, drvGaze;
     ICartesianControl *iarm;
     IGazeControl      *igaze;
+    Property           option;
 
     BufferedPort<ImageOf<PixelRgb> > imgLPortIn,imgRPortIn;
     Port imgLPortOut,imgRPortOut;
     RpcServer rpcPort;    
     
-    Mutex mutex;
-    Vector cogL,cogR;
+    Mutex mutex;    // basically a semaphor
+    Vector cogL,cogR,initX,initO;
     bool okL,okR;
 
     /***************************************************/
+    // Gets the center of gravity of the blue ball seen by the iCub
+    // in pixel coordinates
     bool getCOG(ImageOf<PixelRgb> &img, Vector &cog)
     {
         int xMean=0;
@@ -66,57 +69,82 @@ protected:
     /***************************************************/
     Vector retrieveTarget3D(const Vector &cogL, const Vector &cogR)
     {
-        // FILL IN THE CODE
+        Vector x;
+        //mutex.lock();
+        igaze->triangulate3DPoint(cogL,cogR,x);
+        //mutex.unlock();
+        return x;
     }
 
     /***************************************************/
     void fixate(const Vector &x)
     {
-        // FILL IN THE CODE
+        igaze->lookAtFixationPoint(x);
+        igaze->waitMotionDone();
     }
 
     /***************************************************/
     Vector computeHandOrientation()
     {
-        // FILL IN THE CODE
+        Vector oy(4), ox(4);
+        oy[0]=0.0; oy[1]=1.0; oy[2]=0.0; oy[3]=+M_PI;
+        ox[0]=1.0; ox[1]=0.0; ox[2]=0.0; ox[3]=-M_PI/2.0;
+        Matrix Ry = yarp::math::axis2dcm(oy);        // from axis/angle to rotation matrix notation
+        Matrix Rx = yarp::math::axis2dcm(ox);
+        Matrix R  = Rx*Ry;                            // compose the two rotations keeping the order
+        Vector o  = yarp::math::dcm2axis(R);
+        return o;
     }
 
     /***************************************************/
     void approachTargetWithHand(const Vector &x, const Vector &o)
     {
-        // FILL IN THE CODE
+        iarm->goToPoseSync(x,o);
+        iarm->waitMotionDone();
     }
 
     /***************************************************/
     void makeItRoll(const Vector &x, const Vector &o)
     {
-        // FILL IN THE CODE
+        double ttime;
+        iarm->getTrajTime(&ttime);
+        iarm->setTrajTime(0.5);
+        Vector y(x);
+        y[1] -=0.25;
+        iarm->goToPoseSync(y,o);
+        iarm->waitMotionDone();
+        iarm->setTrajTime(ttime);
+
+        yDebug() << "Bleep3\n";
     }
 
     /***************************************************/
     void look_down()
     {
-        // FILL IN THE CODE
+        Vector staredown(3);
+        staredown[0] = -0.3;
+        staredown[1] =  0;
+        staredown[2] =  0;
+        igaze->lookAtFixationPoint(staredown);
+        igaze->waitMotionDone();
     }
 
     /***************************************************/
     void roll(const Vector &cogL, const Vector &cogR)
     {
+        mutex.lock();
         yInfo("detected cogs = (%s) (%s)",
               cogL.toString(0,0).c_str(),cogR.toString(0,0).c_str());
-
         Vector x=retrieveTarget3D(cogL,cogR);
+        mutex.unlock();
         yInfo("retrieved 3D point = (%s)",x.toString(3,3).c_str());
-
         fixate(x);
         yInfo("fixating at (%s)",x.toString(3,3).c_str());
-
         Vector o=computeHandOrientation();
         yInfo("computed orientation = (%s)",o.toString(3,3).c_str());
-
+        x[1] += 0.06;
         approachTargetWithHand(x,o);
         yInfo("approached");
-
         makeItRoll(x,o);
         yInfo("roll!");
     }
@@ -124,14 +152,45 @@ protected:
     /***************************************************/
     void home()
     {
-        // FILL IN THE CODE
+        iarm->goToPoseSync(initX,initO);
+        iarm->waitMotionDone();
+        Vector ang(3);
+        ang = 0;
+        igaze->lookAtAbsAngles(ang);
+        igaze->waitMotionDone();
     }
 
 public:
     /***************************************************/
     bool configure(ResourceFinder &rf)
     {
-        // FILL IN THE CODE
+        option.clear();
+        option.put("device","gazecontrollerclient");
+        option.put("remote","/iKinGazeCtrl");
+        option.put("local","/client/igaze");
+        drvGaze.open(option);
+        igaze = NULL;
+        if (drvGaze.isValid())   drvGaze.view(igaze);
+
+        option.clear();
+        option.put("device","cartesiancontrollerclient");
+        option.put("remote","/icubSim/cartesianController/right_arm");
+        option.put("local","/cartesian_client/right_arm");
+        drvArm.open(option);
+        iarm    = NULL;
+        if (drvArm.isValid())
+        {
+            drvArm.view(iarm);
+        }
+
+        Vector curDof;
+        iarm->getDOF(curDof);
+        Vector newDof(3);
+        newDof[0]=1;    // torso pitch: 1 => enable
+        newDof[1]=1;    // torso roll:  2 => skip
+        newDof[2]=1;    // torso yaw:   1 => enable
+        iarm->setDOF(newDof,curDof);
+        iarm->getPose(initX,initO);
 
         imgLPortIn.open("/imgL:i");
         imgRPortIn.open("/imgR:i");
@@ -140,6 +199,7 @@ public:
         imgRPortOut.open("/imgR:o");
 
         rpcPort.open("/service");
+        //Make any input from a Port object go to the respond() method.
         attach(rpcPort);
 
         return true;
@@ -186,9 +246,7 @@ public:
         }
         else if (cmd=="roll")
         {
-            // FILL IN THE CODE
-
-            if (...)
+            if (okL && okR)
             {
                 roll(cogL,cogR);
                 reply.addString("Yeah! I've made it roll like a charm!");
@@ -200,6 +258,10 @@ public:
         {
             home();
             reply.addString("I've got the hard work done! Going home.");
+        }
+        else if (cmd=="close")
+        {
+            close();
         }
         else
             return RFModule::respond(command,reply);

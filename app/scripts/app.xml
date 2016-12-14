@@ -2,6 +2,9 @@
 
   <name>Make It Roll</name>
 
+<!--
+The <port> tags inside <dependencies> indicate that the execution of the current module should be postponed until the ports become available. (g)yarpmanager waits for the ports and continuously checks their availability. If one of the required ports is not available within the time indicated by the "timeout" property, the module will not be launched.
+-->
   <dependencies>
       <port>/icubSim/cam/left</port>
       <port>/icubSim/cam/right</port>
@@ -9,8 +12,41 @@
       <port>/iKinGazeCtrl/rpc</port>
   </dependencies>
 
-  <!-->FILL IN THE APPLICATION<-->
-  
+  <module>
+      <name>yarplogger</name>
+      <parameters>--start</parameters>
+      <node>localhost</node>
+  </module>
+
+  <module>
+      <name>make-it-roll</name>
+      <dependencies>
+         <port timeout="5">/yarplogger</port>
+      </dependencies>
+      <environment>YARP_FORWARD_LOG_ENABLE=1</environment>
+      <node>localhost</node>
+  </module>
+
+  <connection>
+        <from>/icubSim/cam/left</from>
+        <to>/imgL:i</to>
+  </connection>
+  <connection>
+        <from>/icubSim/cam/right</from>
+        <to>/imgR:i</to>
+  </connection>
+
+  <module>
+	<name>yarpview</name>
+	<parameters>--name /leftview</parameters>
+	<node>localhost</node>
+  </module>
+
+  <connection>
+	<from>/imgL:o</from>
+	<to>/leftview</to>
+  </connection>
+
 </application>
 
 
