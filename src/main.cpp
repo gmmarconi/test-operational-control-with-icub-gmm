@@ -71,6 +71,8 @@ protected:
     }
 
     /***************************************************/
+    // Has the head look at the point given by x
+    // This is used to counteract the torso movements indec by the rolling action
     void fixate(const Vector &x)
     {
         igaze->lookAtFixationPoint(x);
@@ -79,6 +81,8 @@ protected:
     }
 
     /***************************************************/
+    // Computes the orientation needed by the right hand to
+    // make the ball roll in a human-like fashion
     Vector computeHandOrientation()
     {
         Vector oy(4), ox(4);
@@ -91,6 +95,7 @@ protected:
     }
 
     /***************************************************/
+    // Puts the hand next to the ball
     void approachTargetWithHand(const Vector &x, const Vector &o)
     {
         iarm->goToPoseSync(x,o);
@@ -98,6 +103,11 @@ protected:
     }
 
     /***************************************************/
+    // If the hand is correctly positioned the iCub pusshes it
+    // The movement is time constrained to impress a firm
+    // acceleration to the ball. Once the iCub knows what's the
+    // timing of the movement, it's just told to move the hand
+    // 25 cm to the left.
     void makeItRoll(const Vector &x, const Vector &o)
     {
         double ttime;
@@ -108,11 +118,13 @@ protected:
         iarm->goToPoseSync(y,o);
         iarm->waitMotionDone();
         iarm->setTrajTime(ttime);
-
-        yDebug() << "Bleep3\n";
     }
 
     /***************************************************/
+    // This function has the iCub look down in order to
+    // have the table and the ball in its field of view.
+    // It look down at the vector [ x y z ] = [ -0.3  0.0  0.0 ]
+    // with respect to the base reference system of the iCub.
     void look_down()
     {
         Vector staredown(3,0.0);
@@ -141,13 +153,44 @@ protected:
 
     /***************************************************/
     void home()
+    // The iCub bows then returns to position, ready to
+    // take a new order
     {
-        iarm->goToPoseSync(initX,initO);
-        iarm->waitMotionDone();
+        // Define bowing position
+        Vector bowX(3), bowO(3);
+        bowX[0] = -0.05;
+        bowX[1] = -0.15;
+        bowX[2] =  0;
+        bowO = initO;
         Vector ang(3);
-        ang = 0;
+        ang = 0.0;
+        // Bows moving the arm to bow position
+        // Multiple positioning commands are needed to
+        // avoid collision with the table.
+        iarm->goToPose(bowX,bowO);
+        bowX[2] = -0.05;
+        Time::delay(1);
+        iarm->goToPose(bowX,bowO);
+        Time::delay(3.5);
         igaze->lookAtAbsAngles(ang);
         igaze->waitMotionDone();
+        // Puts arm back into position
+        // Multiple positioning commands are needed to
+        // avoid collision with the body.
+        bowX[0] -= 0.25;
+        bowX[1] += 0.05;
+        bowO[0]  = -0.4;
+        bowO[1]  = -0.25;
+        bowO[2]  = -1;
+        bowO[3]  =  0;
+        iarm->goToPose(bowX,bowO);
+        Time::delay(2.5);
+        iarm->goToPoseSync(initX,initO);
+        iarm->waitMotionDone();
+        igaze->lookAtAbsAngles(ang);
+        igaze->waitMotionDone();
+        iarm->goToPoseSync(initX,initO);
+        iarm->waitMotionDone();
     }
 
 public:
@@ -179,15 +222,26 @@ public:
 
         Vector newDof(10,1.0);
         iarm->setDOF(newDof,newDof);
+        int cumulated_delay = 0.001;
+        Time::delay(cumulated_delay);
+        while ((!iarm->getPose(initX,initO)) && (cumulated_delay < 2))
+        {
+            cumulated_delay += cumulated_delay;
+            Time::delay(cumulated_delay);
+        }
+        if (cumulated_delay >= 2 )
+        {
+            drvGaze.close();
+            drvArm.close();
+            return false;
+        }
         
         iarm->getPose(initX,initO);
 
         imgLPortIn.open("/imgL:i");
         imgRPortIn.open("/imgR:i");
-
         imgLPortOut.open("/imgL:o");
         imgRPortOut.open("/imgR:o");
-
         rpcPort.open("/service");
         //Make any input from a Port object go to the respond() method.
         attach(rpcPort);
@@ -225,7 +279,7 @@ public:
             reply.addVocab(Vocab::encode("many"));
             reply.addString("Available commands:");
             reply.addString("- look_down");
-            reply.addString("- make_it_roll");
+            reply.addString("- roll");
             reply.addString("- home");
             reply.addString("- quit");
         }
@@ -234,7 +288,7 @@ public:
             look_down();
             reply.addString("Yep! I'm looking down now!");
         }
-        else if (cmd=="make_it_roll")
+        else if (cmd=="roll")
         {
             mutex.lock();
             Vector cogL=this->cogL;

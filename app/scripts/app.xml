@@ -12,6 +12,8 @@ The <port> tags inside <dependencies> indicate that the execution of the current
       <port>/iKinGazeCtrl/rpc</port>
   </dependencies>
 
+<!--- Modules --->
+
   <module>
       <name>yarplogger</name>
       <parameters>--start</parameters>
@@ -27,6 +29,14 @@ The <port> tags inside <dependencies> indicate that the execution of the current
       <node>localhost</node>
   </module>
 
+  <module>
+	<name>yarpview</name>
+	<parameters>--name /leftview</parameters>
+	<node>localhost</node>
+  </module>
+
+<!--- Connections --->
+
   <connection>
         <from>/icubSim/cam/left</from>
         <to>/imgL:i</to>
@@ -36,17 +46,10 @@ The <port> tags inside <dependencies> indicate that the execution of the current
         <to>/imgR:i</to>
   </connection>
 
-  <module>
-	<name>yarpview</name>
-	<parameters>--name /leftview</parameters>
-	<node>localhost</node>
-  </module>
-
   <connection>
 	<from>/imgL:o</from>
 	<to>/leftview</to>
   </connection>
 
 </application>
-
 
