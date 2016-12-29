@@ -5,14 +5,11 @@
 #include <yarp/sig/all.h>
 #include <yarp/math/Math.h>
 
-#include <iCub/ctrl/math.h>
-
 using namespace std;
 using namespace yarp::os;
 using namespace yarp::dev;
 using namespace yarp::sig;
 using namespace yarp::math;
-using namespace iCub::ctrl;
 
 
 /***************************************************/
@@ -21,8 +18,7 @@ class CtrlModule: public RFModule
 protected:
     PolyDriver drvArm, drvGaze;
     ICartesianControl *iarm;
-    IGazeControl      *igaze;
-    Property           option;
+    IGazeControl      *igaze;    
 
     BufferedPort<ImageOf<PixelRgb> > imgLPortIn,imgRPortIn;
     Port imgLPortOut,imgRPortOut;
@@ -70,9 +66,7 @@ protected:
     Vector retrieveTarget3D(const Vector &cogL, const Vector &cogR)
     {
         Vector x;
-        //mutex.lock();
         igaze->triangulate3DPoint(cogL,cogR,x);
-        //mutex.unlock();
         return x;
     }
 
@@ -81,6 +75,7 @@ protected:
     {
         igaze->lookAtFixationPoint(x);
         igaze->waitMotionDone();
+        igaze->setTrackingMode(true);
     }
 
     /***************************************************/
@@ -92,8 +87,7 @@ protected:
         Matrix Ry = yarp::math::axis2dcm(oy);        // from axis/angle to rotation matrix notation
         Matrix Rx = yarp::math::axis2dcm(ox);
         Matrix R  = Rx*Ry;                            // compose the two rotations keeping the order
-        Vector o  = yarp::math::dcm2axis(R);
-        return o;
+        return yarp::math::dcm2axis(R);
     }
 
     /***************************************************/
@@ -121,10 +115,8 @@ protected:
     /***************************************************/
     void look_down()
     {
-        Vector staredown(3);
+        Vector staredown(3,0.0);
         staredown[0] = -0.3;
-        staredown[1] =  0;
-        staredown[2] =  0;
         igaze->lookAtFixationPoint(staredown);
         igaze->waitMotionDone();
     }
@@ -132,11 +124,9 @@ protected:
     /***************************************************/
     void roll(const Vector &cogL, const Vector &cogR)
     {
-        mutex.lock();
         yInfo("detected cogs = (%s) (%s)",
               cogL.toString(0,0).c_str(),cogR.toString(0,0).c_str());
         Vector x=retrieveTarget3D(cogL,cogR);
-        mutex.unlock();
         yInfo("retrieved 3D point = (%s)",x.toString(3,3).c_str());
         fixate(x);
         yInfo("fixating at (%s)",x.toString(3,3).c_str());
@@ -164,32 +154,32 @@ public:
     /***************************************************/
     bool configure(ResourceFinder &rf)
     {
-        option.clear();
+        Property option;
         option.put("device","gazecontrollerclient");
         option.put("remote","/iKinGazeCtrl");
         option.put("local","/client/igaze");
         drvGaze.open(option);
         igaze = NULL;
-        if (drvGaze.isValid())   drvGaze.view(igaze);
+        if (!drvGaze.isValid())
+            return false;
+        drvGaze.view(igaze);
 
         option.clear();
         option.put("device","cartesiancontrollerclient");
         option.put("remote","/icubSim/cartesianController/right_arm");
         option.put("local","/cartesian_client/right_arm");
         drvArm.open(option);
-        iarm    = NULL;
-        if (drvArm.isValid())
+        iarm = NULL;
+        if (!drvArm.isValid())
         {
-            drvArm.view(iarm);
+            drvGaze.close();
+            return false;
         }
+        drvArm.view(iarm);
 
-        Vector curDof;
-        iarm->getDOF(curDof);
-        Vector newDof(3);
-        newDof[0]=1;    // torso pitch: 1 => enable
-        newDof[1]=1;    // torso roll:  2 => skip
-        newDof[2]=1;    // torso yaw:   1 => enable
-        iarm->setDOF(newDof,curDof);
+        Vector newDof(10,1.0);
+        iarm->setDOF(newDof,newDof);
+        
         iarm->getPose(initX,initO);
 
         imgLPortIn.open("/imgL:i");
@@ -244,9 +234,15 @@ public:
             look_down();
             reply.addString("Yep! I'm looking down now!");
         }
-        else if (cmd=="roll")
+        else if (cmd=="make_it_roll")
         {
-            if (okL && okR)
+            mutex.lock();
+            Vector cogL=this->cogL;
+            Vector cogR=this->cogR;
+            bool ok=okL && okR;
+            mutex.unlock();
+            
+            if (ok)
             {
                 roll(cogL,cogR);
                 reply.addString("Yeah! I've made it roll like a charm!");
