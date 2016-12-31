@@ -160,10 +160,9 @@ protected:
         Vector bowX(3), bowO(3);
         bowX[0] = -0.05;
         bowX[1] = -0.15;
-        bowX[2] =  0;
+        bowX[2] =  0.0;
         bowO = initO;
-        Vector ang(3);
-        ang = 0.0;
+        Vector ang(3,0.0);
         // Bows moving the arm to bow position
         // Multiple positioning commands are needed to
         // avoid collision with the table.
@@ -181,8 +180,8 @@ protected:
         bowX[1] += 0.05;
         bowO[0]  = -0.4;
         bowO[1]  = -0.25;
-        bowO[2]  = -1;
-        bowO[3]  =  0;
+        bowO[2]  = -1.0;
+        bowO[3]  =  0.0;
         iarm->goToPose(bowX,bowO);
         Time::delay(2.5);
         iarm->goToPoseSync(initX,initO);
