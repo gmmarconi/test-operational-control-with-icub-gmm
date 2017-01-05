@@ -221,14 +221,12 @@ public:
 
         Vector newDof(10,1.0);
         iarm->setDOF(newDof,newDof);
-        int cumulated_delay = 0.001;
-        Time::delay(cumulated_delay);
-        while ((!iarm->getPose(initX,initO)) && (cumulated_delay < 2))
+        double t0=Time::now();
+        while ((!iarm->getPose(initX,initO)) && (Time::now()-t0)<2.0)
         {
-            cumulated_delay += cumulated_delay;
-            Time::delay(cumulated_delay);
+            Time::delay(0.1);
         }
-        if (cumulated_delay >= 2 )
+        if ((Time::now()-t0)>=2.0)
         {
             drvGaze.close();
             drvArm.close();
