@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<suit name="MIR Suit">
+    <description>  Make it Roll Single test </description>
+    <environment>--robotname icubSim</environment>
+
+    <fixture param="--fixture icubsim-MIR-fixture.xml"> yarpmanager </fixture>
+
+    <test param=""> ../usr/local/lib/libMIRTest.so </test>
+</suit>

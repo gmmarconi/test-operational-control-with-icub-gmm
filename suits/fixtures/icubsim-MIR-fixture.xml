@@ -1,0 +1,68 @@
+<application>
+    <name>Make It Roll</name>
+    <description>A fixture to prepare components required to test Make It Roll</description>
+    <version>1.0</version>
+    <authors>
+        <author email="gianmaria.marconi@iit.it">Gian Maria Marconi</author>
+    </authors>
+
+  <module>
+      <name>iCub_SIM</name>
+      <node>localhost</node>
+  </module>
+
+  <module>
+      <name>yarprobotinterface</name>
+      <parameters>--context simCartesianControl --config no_legs.xml</parameters>
+      <dependencies>
+          <port timeout="40">/icubSim/left_arm/state:o</port>
+          <port timeout="40">/icubSim/right_arm/state:o</port>
+      </dependencies>
+      <node>localhost</node>
+  </module>
+  
+  <module>
+      <name>iKinCartesianSolver</name>
+      <parameters>--context simCartesianControl --part right_arm</parameters>
+      <dependencies>
+          <port timeout="40">/icubSim/right_arm/state:o</port>
+      </dependencies>
+      <node>localhost</node>
+  </module>
+  
+  <module>
+      <name>iKinGazeCtrl</name>
+      <parameters>--from configSim.ini</parameters>
+      <dependencies>
+          <port timeout="40">/icubSim/head/state:o</port>
+          <port timeout="40">/icubSim/inertial</port>
+      </dependencies>
+      <node>localhost</node>
+  </module>
+
+	<dependencies>
+      		<port>/icubSim/cam/left</port>
+      		<port>/icubSim/cam/right</port>
+      		<port>/icubSim/cartesianController/right_arm/state:o</port>      
+     		<port>/iKinGazeCtrl/rpc</port>
+  	</dependencies>
+
+   <module>
+        <name>make-it-roll</name>
+        <node>localhost</node>
+   </module>
+
+  <connection>
+        <from>/icubSim/cam/left</from>
+        <to>/imgL:i</to>
+  </connection>
+  <connection>
+        <from>/icubSim/cam/right</from>
+        <to>/imgR:i</to>
+  </connection>
+
+  <connection>
+	<from>/imgL:o</from>
+	<to>/leftview</to>
+  </connection>
+</application>
