@@ -4,8 +4,6 @@
 
 class MyTest : public RTF::TestCase {
 public:
-
-    yarp::os::Network yarp;
     yarp::os::RpcClient portMIR, portiCubSim;
     yarp::os::ResourceFinder rf;
 

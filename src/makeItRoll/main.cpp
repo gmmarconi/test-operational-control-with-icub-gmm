@@ -170,7 +170,7 @@ protected:
         bowX[2] = -0.05;
         Time::delay(1);
         iarm->goToPose(bowX,bowO);
-        Time::delay(3.5);
+        Time::delay(2.5);
         igaze->lookAtAbsAngles(ang);
         igaze->waitMotionDone();
         // Puts arm back into position
