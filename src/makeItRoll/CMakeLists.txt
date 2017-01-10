@@ -9,3 +9,7 @@ set(folder_source ${folder_source} main.cpp)
 add_executable(${PROJECT_NAME} ${folder_source})
 # link with YARP libraries
 target_link_libraries(${PROJECT_NAME} ${YARP_LIBRARIES})
+
+install(TARGETS ${PROJECT_NAME}
+        RUNTIME
+        DESTINATION bin)

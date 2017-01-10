@@ -1,9 +1,13 @@
 #ifndef _MYTEST_H_
 #define _MYTEST_H_
-#include <rtf/TestCase.h>
+#include <yarp/os/all.h>
 
 class MyTest : public RTF::TestCase {
 public:
+
+    yarp::os::Network yarp;
+    yarp::os::RpcClient portMIR, portiCubSim;
+    yarp::os::ResourceFinder rf;
 
     MyTest();
 
