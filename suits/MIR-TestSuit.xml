@@ -5,7 +5,8 @@
     <environment>--robotname icubSim</environment>
 
     <fixture param="--fixture MIR-fix1.xml"> yarpmanager </fixture>
+<!--
     <fixture param="--fixture MIR-fix2.xml"> yarpmanager </fixture>
-
-    <test param=""> /home/gmarconi/coding/yarp/test-operational-control-with-icub-gmmarconi/usr/local/lib/libMIRTest.so </test>
+-->
+    <test param=""> libMIRTest.so </test>
 </suit>

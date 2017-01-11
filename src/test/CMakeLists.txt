@@ -8,7 +8,8 @@ find_package(YARP)
 include_directories(${CMAKE_SOURCE_DIR}
     ${RTF_INCLUDE_DIRS}
     ${YARP_INCLUDE_DIRS}
-    ${YARP_HELPERS_INCLUDE_DIR})
+    )
+
 
 link_libraries(${RTF_LIBRARIES}
     ${YARP_LIBRARIES})
@@ -19,3 +20,4 @@ install(TARGETS ${PROJECT_NAME}
         EXPORT ${PROJECT_NAME}
         COMPONENT runtime
         LIBRARY DESTINATION lib)
+

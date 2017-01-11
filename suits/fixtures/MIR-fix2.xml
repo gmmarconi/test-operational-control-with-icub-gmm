@@ -9,13 +9,13 @@ The <port> tags inside <dependencies> indicate that the execution of the current
 
 <!--- Modules --->
   <module>
-      <name>/home/gmarconi/coding/yarp/test-operational-control-with-icub-gmmarconi/usr/local/bin/make-it-roll</name>
+      <name>make-it-roll</name>
       <dependencies>
-      	<port timeout="100">/icubSim/cam/left</port>
-      	<port timeout="100">/icubSim/cam/right</port>
-      	<port timeout="100">/icubSim/cartesianController/right_arm/state:o</port>      
-    	<port timeout="100">/iKinGazeCtrl/rpc</port>
-      	<port timeout="100">/icubSim/world</port>
+      	<port timeout="40">/icubSim/cam/left</port>
+      	<port timeout="40">/icubSim/cam/right</port>
+      	<port timeout="40">/icubSim/cartesianController/right_arm/state:o</port>      
+    	<port timeout="40">/iKinGazeCtrl/rpc</port>
+      	<port timeout="40">/icubSim/world</port>
       </dependencies>
       <node>localhost</node>
   </module>
