@@ -17,7 +17,7 @@ The <port> tags inside <dependencies> indicate that the execution of the current
     	<port timeout="40">/iKinGazeCtrl/rpc</port>
       	<port timeout="40">/icubSim/world</port>
       </dependencies>
-      <node>localhost</node>
+      <node>testnode</node>
   </module>
 
 <!--- Connections --->

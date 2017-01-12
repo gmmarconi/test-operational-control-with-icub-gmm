@@ -2,6 +2,7 @@
 #include <rtf/dll/Plugin.h>
 #include "MyTest.h"
 #include <yarp/os/ConstString.h>
+#include <yarp/os/Time.h>
 
 using namespace RTF;
 using namespace yarp::os;
@@ -13,7 +14,8 @@ MyTest::~MyTest() { }
 
 bool MyTest::setup(int argc, char** argv) {
     RTF_TEST_REPORT("running MIRTest::setup...");
-
+    
+    Time::delay(2);
     rf.configure(argc, argv);
     rf.setVerbose(true);
     yarp::os::ConstString name, server_name;
@@ -45,6 +47,7 @@ void MyTest::run() {
     msg.clear();
     msg.addString("look_down");
     RTF_TEST_FAIL_IF(portMIR.write(msg, response), "iCubSim couldn't look down");
+    Time::delay(5);
 
     RTF_TEST_REPORT("Retrieving ball position");
     msg.clear();
@@ -52,11 +55,12 @@ void MyTest::run() {
     msg.addString("world get ball");
     RTF_ASSERT_ERROR_IF(portiCubSim.write(msg, response), "Couldn't retrieve ball position");
     int ball_y = response.get(1).asInt();
-
+    
     RTF_TEST_REPORT("Sending message 'roll'");
     msg.clear();
     msg.addString("roll");
     RTF_TEST_FAIL_IF(portMIR.write(msg, response), "iCubSim couldn't make it roll");
+    Time::delay(5); 
 
     Time::delay(1.5);
     RTF_TEST_REPORT("Retrieving ball position");
@@ -70,6 +74,7 @@ void MyTest::run() {
     msg.clear();
     msg.addString("home");
     RTF_TEST_FAIL_IF(portMIR.write(msg, response), "iCubSim couldn't go home");
+    Time::delay(5);
 
     RTF_TEST_REPORT("Sending message 'quit'");
     msg.clear();

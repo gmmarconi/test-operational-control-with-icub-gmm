@@ -6,7 +6,9 @@
 
     <fixture param="--fixture MIR-fix1.xml"> yarpmanager </fixture>
 
-    <fixture param="--fixture MIR-fix2.xml"> yarpmanager </fixture>
 
     <test param=""> libMIRTest.so </test>
+<!--
+    <test param=""> /home/icub/vvv-school/test-operational-control-with-icub-gmm/suits/libMIRTest.so </test>
+-->
 </suit>
